@@ -118,15 +118,13 @@ let movies = [
 
 router.get("/", async function (request, response) {
   // response.send(movies);
-  const allMovies = await Movies.scan.go();
+  const allMovies = await getAllMovies();
   response.send(allMovies.data);
 });
 
 router.get("/:id", async function (request, response) {
   const { id } = request.params;
-  const movie = await Movies.get({
-    movieId: id,
-  }).go();
+  const movie = await getMovieById(id);
   movie.data
     ? response.send(movie.data)
     : response.status(404).send({ msg: "Movie Not  Found" });
@@ -134,9 +132,7 @@ router.get("/:id", async function (request, response) {
 
 router.delete("/:id", async function (request, response) {
   const { id } = request.params;
-  const movie = await Movies.delete({
-    movieId: id,
-  }).go();
+  const movie = await deleteMovie(id);
   if (movie.data) {
     response.send({ msg: "Movie deleted 🎉", deletedMovie: movie.data });
   } else {
@@ -150,22 +146,17 @@ router.post("", async function (req, res) {
     ...data,
     movieId: uuidv4(),
   };
-  await Movies.create(addMovie).go();
+  await createNewMovie(addMovie);
   console.log(addMovie);
   res.send(addMovie);
 });
 
 router.put("/:id", async function (request, response) {
   const { id } = request.params;
-  const existingData = await Movies.get({
-    movieId: id,
-  }).go();
+  const existingData = await getMovieById(id);
   const updatedData = request.body;
   if (existingData.data) {
-    const mergedData = await Movies.put({
-      ...existingData.data,
-      ...updatedData,
-    }).go();
+    const mergedData = await updateMovieById(existingData, updatedData);
     // console.log(mergedData.data);
     response.send(mergedData.data);
   } else {
@@ -174,3 +165,29 @@ router.put("/:id", async function (request, response) {
 });
 
 export default router;
+function updateMovieById(existingData, updatedData) {
+  return Movies.put({
+    ...existingData.data,
+    ...updatedData,
+  }).go();
+}
+
+function deleteMovie(id) {
+  return Movies.delete({
+    movieId: id,
+  }).go();
+}
+
+function createNewMovie(addMovie) {
+  return Movies.create(addMovie).go();
+}
+
+async function getMovieById(id) {
+  return await Movies.get({
+    movieId: id,
+  }).go();
+}
+
+function getAllMovies() {
+  return Movies.scan.go();
+}
