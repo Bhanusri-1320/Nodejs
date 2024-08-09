@@ -122,19 +122,23 @@ router.get("/", async function (request, response) {
   response.send(allMovies.data);
 });
 
-router.get("/:id", function (request, response) {
+router.get("/:id", async function (request, response) {
   const { id } = request.params;
-  const movie = movies.find((m) => m.id == id);
-  movie ? response.send(movie) : response.status(404).send("Movie Not  Found");
+  const movie = await Movies.get({
+    movieId: id,
+  }).go();
+  movie.data
+    ? response.send(movie.data)
+    : response.status(404).send({ msg: "Movie Not  Found" });
 });
 
-router.delete("/:id", function (request, response) {
+router.delete("/:id", async function (request, response) {
   const { id } = request.params;
-  const movie = movies.find((m) => m.id == id);
-  if (movie) {
-    const mid = movies.indexOf(movie);
-    movies.splice(mid, 1);
-    response.send("Movie deleted 🎉");
+  const movie = await Movies.delete({
+    movieId: id,
+  }).go();
+  if (movie.data) {
+    response.send({ msg: "Movie deleted 🎉", deletedMovie: movie.data });
   } else {
     response.status(404).send("No such Movie 🥲");
   }
@@ -151,14 +155,19 @@ router.post("", async function (req, res) {
   res.send(addMovie);
 });
 
-router.put("/:id", function (request, response) {
+router.put("/:id", async function (request, response) {
   const { id } = request.params;
-  const movie = movies.find((m) => m.id == id);
-  const idx = movies.indexOf(movie);
-  if (movie) {
-    const mergedData = { ...movie, ...request.body };
-    movies[idx] = mergedData;
-    response.send(movies);
+  const existingData = await Movies.get({
+    movieId: id,
+  }).go();
+  const updatedData = request.body;
+  if (existingData.data) {
+    const mergedData = await Movies.put({
+      ...existingData.data,
+      ...updatedData,
+    }).go();
+    // console.log(mergedData.data);
+    response.send(mergedData.data);
   } else {
     response.status(404).send("No such Movie 🥲");
   }
