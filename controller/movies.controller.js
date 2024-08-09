@@ -6,7 +6,6 @@ import {
   updateMovieById,
 } from "../services/movies.service.js";
 import { v4 as uuidv4 } from "uuid";
-import {  } from "../entities/movies.entity.js";
 
 async function getAllMoviesCtr(request, response) {
   // response.send(movies);
