@@ -38,8 +38,6 @@ async function deleteMovieCtr(request, response) {
   try {
     const movie = await getMoviesById(id);
     if (movie.data) {
-      // const mid = movies.indexOf(movie);
-      // movies.splice(mid, 1);
       await deleteMovieById(id);
       response.send({ msg: "Movie deleted 🎉" });
     } else {
