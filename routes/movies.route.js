@@ -1,4 +1,4 @@
-import express from "express";
+import express, { response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { Movies } from "../entities/movies.entity.js";
 
@@ -118,76 +118,80 @@ let movies = [
 
 router.get("/", async function (request, response) {
   // response.send(movies);
-  const allMovies = await getAllMovies();
-  response.send(allMovies.data);
+  try {
+    const allMovies = await Movies.scan.go();
+    response.status(200).send(allMovies.data);
+  } catch (err) {
+    response.status(500).send({ msg: " Couldn't get what you wanted " });
+  }
 });
 
 router.get("/:id", async function (request, response) {
   const { id } = request.params;
-  const movie = await getMovieById(id);
-  movie.data
-    ? response.send(movie.data)
-    : response.status(404).send({ msg: "Movie Not  Found" });
+  // console.log(movie.data);
+
+  try {
+    const movie = await Movies.get({ movieId: id }).go();
+    console.log(movie);
+    movie.data
+      ? response.send(movie.data)
+      : response.status(404).send({ msg: "Movie not found" });
+  } catch (err) {
+    response.status(500).send({ msg: "failed to retrieve" });
+  }
+  // const movie = movies.find((m) => m.id == id);
 });
 
 router.delete("/:id", async function (request, response) {
   const { id } = request.params;
-  const movie = await deleteMovie(id);
-  if (movie.data) {
-    response.send({ msg: "Movie deleted 🎉", deletedMovie: movie.data });
-  } else {
-    response.status(404).send("No such Movie 🥲");
+
+  try {
+    const movie = await Movies.get({ movieId: id }).go();
+    if (movie.data) {
+      // const mid = movies.indexOf(movie);
+      // movies.splice(mid, 1);
+      await Movies.delete({ movieId: id }).go();
+      response.send("Movie deleted 🎉");
+    } else {
+      response.status(404).send({ msg: "there is No such Movie 🥲" });
+    }
+  } catch (err) {
+    response.status(500).send({ msg: "Failed to Perform delete" });
   }
 });
 
-router.post("", async function (req, res) {
+router.post("/", async function (req, res) {
   const data = req.body;
   const addMovie = {
     ...data,
     movieId: uuidv4(),
   };
-  await createNewMovie(addMovie);
-  console.log(addMovie);
-  res.send(addMovie);
+  try {
+    await Movies.create(addMovie).go();
+    response.status(201).send(addMovie);
+  } catch (err) {
+    response.send(err);
+  }
 });
 
 router.put("/:id", async function (request, response) {
   const { id } = request.params;
-  const existingData = await getMovieById(id);
-  const updatedData = request.body;
-  if (existingData.data) {
-    const mergedData = await updateMovieById(existingData, updatedData);
-    // console.log(mergedData.data);
-    response.send(mergedData.data);
-  } else {
-    response.status(404).send("No such Movie 🥲");
+  const updateMovie = request.body;
+  try {
+    const movie = await Movies.get({ movieId: id }).go();
+    if (movie.data) {
+      const mergedData = await Movies.put({
+        ...movie.data,
+        ...updateMovie,
+      }).go();
+      console.log("updated..");
+      response.send(mergedData.data);
+    } else {
+      response.status(404).send("No such Movie 🥲");
+    }
+  } catch (err) {
+    response.status(500).send({ msg: "Movie not found" });
   }
 });
 
 export default router;
-function updateMovieById(existingData, updatedData) {
-  return Movies.put({
-    ...existingData.data,
-    ...updatedData,
-  }).go();
-}
-
-function deleteMovie(id) {
-  return Movies.delete({
-    movieId: id,
-  }).go();
-}
-
-function createNewMovie(addMovie) {
-  return Movies.create(addMovie).go();
-}
-
-async function getMovieById(id) {
-  return await Movies.get({
-    movieId: id,
-  }).go();
-}
-
-function getAllMovies() {
-  return Movies.scan.go();
-}

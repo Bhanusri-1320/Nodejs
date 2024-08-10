@@ -1,5 +1,4 @@
 import { Entity } from "electrodb"; // ORM(Object relation mapping) // Adapter on adapter
-
 import { client } from "../util/dbconnection.js";
 
 const Movies = new Entity(
@@ -46,7 +45,7 @@ const Movies = new Entity(
     },
     // add your DocumentClient and TableName as a second parameter
   },
-  { client, table: "movies" }
+  { client, table: "Movie" }
 );
 
 export { Movies };
